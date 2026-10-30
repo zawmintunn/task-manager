@@ -29,6 +29,11 @@ npm run build
 npm run preview
 ```
 
+For real-browser acceptance checks, install Playwright's Chromium once with
+`npx playwright install chromium`, then run `npm run test:e2e`. The browser tests
+start the Vite app automatically and save an empty-state screenshot to
+`artifacts/qa-task-manager-empty.png`.
+
 ## MVP limitations
 
 Tasks remain in this browser's local storage and are not synced across devices or browsers. Clearing site data removes them. This MVP has no authentication, collaboration, reminders, recurring tasks, or server backup. If browser storage is blocked or full, the app shows a save error and and keeps your saved data unchanged.

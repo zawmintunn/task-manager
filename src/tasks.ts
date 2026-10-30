@@ -11,10 +11,12 @@ export function isTask(value: unknown): value is Task {
   const t = value as Record<string, unknown>;
   return typeof t.id === 'string' && typeof t.title === 'string' && typeof t.description === 'string' && statuses.includes(t.status as Status) && priorities.includes(t.priority as Priority) && typeof t.dueDate === 'string' && typeof t.createdAt === 'string' && typeof t.updatedAt === 'string';
 }
-export function loadTasks(storage: Pick<Storage, 'getItem'> = localStorage): Task[] {
-  try { const raw = storage.getItem(STORAGE_KEY); if (!raw) return []; const parsed: unknown = JSON.parse(raw); return Array.isArray(parsed) ? parsed.filter(isTask) : []; } catch { return []; }
+export function loadTasks(storage?: Pick<Storage, 'getItem'>): Task[] {
+  // Resolve the browser storage inside the guard: privacy settings or sandboxed
+  // documents can throw while merely accessing window.localStorage.
+  try { const raw = (storage ?? globalThis.localStorage).getItem(STORAGE_KEY); if (!raw) return []; const parsed: unknown = JSON.parse(raw); return Array.isArray(parsed) ? parsed.filter(isTask) : []; } catch { return []; }
 }
-export function saveTasks(tasks: Task[], storage: Pick<Storage, 'setItem'> = localStorage): void { storage.setItem(STORAGE_KEY, JSON.stringify(tasks)); }
+export function saveTasks(tasks: Task[], storage?: Pick<Storage, 'setItem'>): void { (storage ?? globalThis.localStorage).setItem(STORAGE_KEY, JSON.stringify(tasks)); }
 export function createTask(input: TaskInput, now = new Date(), id: string = crypto.randomUUID()): Task {
   const timestamp = now.toISOString(); return { ...input, title: input.title.trim(), description: input.description.trim(), id, createdAt: timestamp, updatedAt: timestamp };
 }

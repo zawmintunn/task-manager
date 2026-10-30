@@ -7,8 +7,8 @@ const today = () => { const date = new Date(); return `${date.getFullYear()}-${S
 export default function App() {
  const [tasks,setTasks]=useState<Task[]>(()=>loadTasks()); const [filters,setFilters]=useState<Filters>(initialFilters); const [editing,setEditing]=useState<Task|null|undefined>(undefined); const [saveError,setSaveError]=useState('');
  const counts=getCounts(tasks,today()); const visible=useMemo(()=>filterTasks(tasks,filters),[tasks,filters]);
- function persist(next:Task[]){try{saveTasks(next);setTasks(next);setSaveError('')}catch{setSaveError('Your changes could not be saved. Check that browser storage is available, then try again.')}}
- function save(input:TaskInput){if(editing){persist(tasks.map(t=>t.id===editing.id?updateTask(t,input):t))}else{persist([createTask(input),...tasks])}setEditing(undefined)}
+ function persist(next:Task[]){try{saveTasks(next);setTasks(next);setSaveError('');return true}catch{setSaveError('Your changes could not be saved. Check that browser storage is available, then try again.');return false}}
+ function save(input:TaskInput){const saved=editing?persist(tasks.map(t=>t.id===editing.id?updateTask(t,input):t)):persist([createTask(input),...tasks]);if(saved)setEditing(undefined)}
  function remove(task:Task){if(window.confirm(`Delete “${task.title}”? This cannot be undone.`))persist(tasks.filter(t=>t.id!==task.id))}
  function quick(task:Task){persist(tasks.map(t=>t.id===task.id?toggleComplete(t):t))}
  const active=filters.query||filters.status!=='all'||filters.priority!=='all';

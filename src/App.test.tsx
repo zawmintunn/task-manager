@@ -30,7 +30,7 @@ describe('task manager journey', () => {
   it('shows an actionable message when saving fails', async () => {
     const user=userEvent.setup(); vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw new DOMException('quota','QuotaExceededError')});
     render(<App />); await user.click(screen.getByRole('button',{name:/add task/i})); await user.type(screen.getByLabelText(/title/i),'Unsaved task'); await user.click(within(screen.getByRole('dialog')).getByRole('button',{name:/add task/i}));
-    expect(screen.getByRole('alert')).toHaveTextContent(/check that browser storage is available/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(/check that browser storage is available/i); expect(screen.getByRole('dialog')).toBeInTheDocument(); expect(screen.getByLabelText(/title/i)).toHaveValue('Unsaved task');
   });
   it('keeps modal keyboard focus inside and closes on Escape', () => {
     render(<App />); fireEvent.click(screen.getByRole('button',{name:/add task/i}));
