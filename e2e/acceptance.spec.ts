@@ -162,8 +162,8 @@ test('tags can be created, edited, filtered, persisted, and restored from backup
   await dialog.getByLabel('Title *').fill('Plan release');
   await dialog.getByLabel(/Tags/).fill(' Work, Planning, work, ');
   await dialog.getByRole('button', { name: 'Add task' }).click();
-  await expect(page.locator('.task-card').filter({ hasText: 'Plan release' }).getByLabel('Tags')).toContainText('Work');
-  await expect(page.locator('.task-card').filter({ hasText: 'Plan release' }).getByLabel('Tags')).toContainText('Planning');
+  await expect(page.locator('.task-card').filter({ hasText: 'Plan release' }).getByLabel('Tags')).toContainText('work');
+  await expect(page.locator('.task-card').filter({ hasText: 'Plan release' }).getByLabel('Tags')).toContainText('planning');
 
   await page.getByRole('button', { name: /add task/i }).click();
   dialog = page.getByRole('dialog');
