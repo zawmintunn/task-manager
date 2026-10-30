@@ -1,3 +1,34 @@
 # Task Manager
 
-Personal task manager MVP. The implementation and usage guide are in the feature branch pull request.
+A lightweight personal task manager for capturing work, setting priorities, and tracking progress. Tasks are stored in your browser on this device; there is no account or server.
+
+## Requirements
+
+- Node.js 20 or newer
+- npm
+
+## Install and run
+
+```sh
+npm install
+npm run dev
+```
+
+Open the local URL printed by Vite (usually <http://localhost:5173>).
+
+## Example workflow
+
+Select **Add task**, enter a title such as “Prepare project brief”, choose a priority and optional due date, then save. Search for “project”, filter by status or priority, and open the task to edit details. Use the circle control to mark it complete or reopen it. Deletion asks for confirmation. Refresh the page to see tasks saved on this browser.
+
+## Checks and production build
+
+```sh
+npm test
+npm run typecheck
+npm run build
+npm run preview
+```
+
+## MVP limitations
+
+Tasks remain in this browser's local storage and are not synced across devices or browsers. Clearing site data removes them. This MVP has no authentication, collaboration, reminders, recurring tasks, or server backup. If browser storage is blocked or full, the app shows a save error and and keeps your saved data unchanged.
