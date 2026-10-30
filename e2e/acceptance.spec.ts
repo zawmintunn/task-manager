@@ -38,9 +38,9 @@ test('task lifecycle, filters, persistence, deletion, and browser console', asyn
   await expect(stat('Pending')).toHaveText('2');
 
   await page.getByRole('button', { name: 'Edit Prepare roadmap', exact: true }).click();
-  await page.getByLabel('Title *').fill('Prepare product roadmap');
-  await page.getByLabel('Status').selectOption('in-progress');
-  await page.getByRole('button', { name: 'Save changes' }).click();
+  await dialog.getByLabel('Title *').fill('Prepare product roadmap');
+  await dialog.getByLabel('Status').selectOption('in-progress');
+  await dialog.getByRole('button', { name: 'Save changes' }).click();
   await page.getByRole('textbox', { name: 'Search tasks' }).fill('product');
   await page.getByRole('combobox', { name: 'Filter by status' }).selectOption('in-progress');
   await page.getByRole('combobox', { name: 'Filter by priority' }).selectOption('high');
