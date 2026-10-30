@@ -6,6 +6,17 @@ import App from './App';
 afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); });
 
 describe('task manager journey', () => {
+  it('moves a board card to a dropped column and persists its status', async () => {
+    const task={id:'drag-me',title:'Drag me',description:'',status:'todo',priority:'medium',dueDate:'',assignee:null,tags:[],createdAt:'2026-10-01T00:00:00.000Z',updatedAt:'2026-10-01T00:00:00.000Z',activity:[]};
+    localStorage.setItem('task-manager.tasks.v1',JSON.stringify([task]));
+    const user=userEvent.setup(); render(<App />); await user.click(screen.getByRole('button',{name:'Board'}));
+    const card=screen.getByText('Drag me').closest('.board-card') as HTMLElement;
+    const column=screen.getByRole('region',{name:/In Progress/});
+    const data={value:'',setData(_type:string,value:string){this.value=value},getData(){return this.value}};
+    fireEvent.dragStart(card,{dataTransfer:data}); fireEvent.dragOver(column); fireEvent.drop(column,{dataTransfer:data});
+    expect(within(column).getByText('Drag me')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('task-manager.tasks.v1')||'[]')[0].status).toBe('in-progress');
+  });
   it('follows system preference until a theme is chosen, then persists the choice', async () => {
     const user = userEvent.setup();
     vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
