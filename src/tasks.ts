@@ -105,7 +105,7 @@ export function getCounts(tasks: Task[], today = new Date().toISOString().slice(
 export function filterTasks(tasks: Task[], filters: Filters): Task[] {
   const query = filters.query.trim().toLocaleLowerCase();
   const selectedTags = normalizeTags(filters.tags).map(tag => tag.toLocaleLowerCase());
-  return tasks.filter(t => (!query || `${t.title} ${t.description} ${(t.tags ?? []).join(' ')}`.toLocaleLowerCase().includes(query)) && (filters.status === 'all' || t.status === filters.status) && (filters.priority === 'all' || t.priority === filters.priority) && selectedTags.every(tag => (t.tags ?? []).some(taskTag => taskTag.toLocaleLowerCase() === tag))).sort((a,b) => {
+  return tasks.filter(t => (!query || `${t.title} ${t.description} ${(t.tags ?? []).join(' ')}`.toLocaleLowerCase().includes(query)) && (filters.status === 'all' || t.status === filters.status) && (filters.priority === 'all' || t.priority === filters.priority) && selectedTags.every(tag => (t.tags ?? []).some(taskTag => taskTag.toLocaleLowerCase().includes(tag)))).sort((a,b) => {
     if (filters.sort === 'newest') return b.createdAt.localeCompare(a.createdAt);
     if (filters.sort === 'dueDate') return (a.dueDate || '9999-12-31').localeCompare(b.dueDate || '9999-12-31') || b.createdAt.localeCompare(a.createdAt);
     const rank: Record<Priority, number> = { high: 0, medium: 1, low: 2 }; return rank[a.priority] - rank[b.priority] || b.createdAt.localeCompare(a.createdAt);
