@@ -80,8 +80,14 @@ jobs:
             grep: mobile layout and keyboard dialog controls
           - name: board, activity, and backups
             grep: board assignment, activity history, persistence, and backup round trip
-          - name: tag create, edit, filter, and backup
-            grep: tags can be created, edited, filtered, persisted, and restored from backup
+          - name: tag create and edit
+            grep: tags are created and edited with normalization
+          - name: tag filtering
+            grep: tag filters require all selected tags
+          - name: tag persistence and board
+            grep: tags persist after reload and render in board view
+          - name: tag backup round trip
+            grep: tag backups preserve normalized tags through export and import
           - name: legacy backup and mobile tags
             grep: legacy backups import without tags and tags remain accessible in mobile list and board views
     steps:

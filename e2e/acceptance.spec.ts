@@ -152,7 +152,7 @@ test('board assignment, activity history, persistence, and backup round trip', a
   await expect(page.getByRole('region', { name: 'Task activity history' })).toContainText('Status changed from To Do to In Progress');
 });
 
-test('tags can be created, edited, filtered, persisted, and restored from backup', async ({ page }) => {
+test('tags are created and edited with normalization', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
@@ -165,12 +165,6 @@ test('tags can be created, edited, filtered, persisted, and restored from backup
   await expect(page.locator('.task-card').filter({ hasText: 'Plan release' }).getByLabel('Tags')).toContainText('work');
   await expect(page.locator('.task-card').filter({ hasText: 'Plan release' }).getByLabel('Tags')).toContainText('planning');
 
-  await page.getByRole('button', { name: /add task/i }).click();
-  dialog = page.getByRole('dialog');
-  await dialog.getByLabel('Title *').fill('Write update');
-  await dialog.getByLabel(/Tags/).fill('review');
-  await dialog.getByRole('button', { name: 'Add task' }).click();
-
   await page.getByRole('button', { name: 'Edit Plan release', exact: true }).click();
   dialog = page.getByRole('dialog');
   await dialog.getByLabel(/Tags/).fill('Review, Follow-up, REVIEW');
@@ -180,15 +174,51 @@ test('tags can be created, edited, filtered, persisted, and restored from backup
   await expect(planCard.getByLabel('Tags')).toContainText('follow-up');
   await expect(planCard.getByLabel('Tags').locator('.tag-chip')).toHaveCount(2);
 
+});
+
+test('tag filters require all selected tags', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  for (const task of [{ title: 'Plan release', tags: 'review, follow-up' }, { title: 'Write update', tags: 'review' }]) {
+    await page.getByRole('button', { name: /add task/i }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Title *').fill(task.title);
+    await dialog.getByLabel(/Tags/).fill(task.tags);
+    await dialog.getByRole('button', { name: 'Add task' }).click();
+  }
+
   await page.getByRole('textbox', { name: 'Filter by tag' }).fill('review, follow-up');
   await expect(page.locator('.task-card .task-title')).toHaveText(['Plan release']);
-  await page.getByRole('button', { name: 'Clear filters' }).click();
+});
+
+test('tags persist after reload and render in board view', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.getByRole('button', { name: /add task/i }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Title *').fill('Plan release');
+  await dialog.getByLabel(/Tags/).fill('review, follow-up');
+  await dialog.getByRole('button', { name: 'Add task' }).click();
+
   await page.reload();
   await expect(page.locator('.task-card').filter({ hasText: 'Plan release' }).getByLabel('Tags')).toContainText('follow-up');
-
   await page.getByRole('button', { name: 'Board', exact: true }).click();
   const board = page.locator('.board');
   await expect(board.getByRole('region', { name: 'To Do' }).filter({ hasText: 'Plan release' }).getByLabel('Tags')).toContainText('review');
+});
+
+test('tag backups preserve normalized tags through export and import', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.getByRole('button', { name: /add task/i }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Title *').fill('Plan release');
+  await dialog.getByLabel(/Tags/).fill('Review, Follow-up, REVIEW');
+  await dialog.getByRole('button', { name: 'Add task' }).click();
 
   const downloadPromise = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export backup' }).click();
