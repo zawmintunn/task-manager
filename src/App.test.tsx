@@ -6,6 +6,18 @@ import App from './App';
 afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); });
 
 describe('task manager journey', () => {
+  it('keeps the first-run empty view until a search or filter is active', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    expect(screen.getByText('A clear desk. A fresh start.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create your first task' })).toBeInTheDocument();
+
+    await user.type(screen.getByRole('textbox', { name: 'Search tasks' }), 'missing');
+    expect(screen.getByText('No tasks found')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear search and filters' })).toBeInTheDocument();
+    expect(screen.queryByText('A clear desk. A fresh start.')).not.toBeInTheDocument();
+  });
+
   it('creates, edits, searches, completes, reloads, and deletes a task', async () => {
     const user = userEvent.setup();
     const view = render(<App />);
