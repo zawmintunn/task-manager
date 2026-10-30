@@ -12,42 +12,97 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  acceptance:
+  unit:
+    name: unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - name: Install locked dependencies
         run: npm ci
-
-      - name: Install Playwright Chromium and system dependencies
-        run: npx playwright install --with-deps chromium
-
-      - name: Run unit tests
+      - name: Run unit and component tests
         run: npm test
 
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Build production bundle
+  build:
+    name: production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Build for GitHub Pages
         run: npm run build
+        env:
+          GITHUB_PAGES: 'true'
 
-      - name: Run browser acceptance tests
-        run: npm run test:e2e
-
+  browser-e2e:
+    name: browser - ${{ matrix.name }}
+    needs: [unit, typecheck, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: task lifecycle and filters
+            grep: task lifecycle, filters, persistence, deletion, and browser console
+          - name: mobile layout and keyboard controls
+            grep: mobile layout and keyboard dialog controls
+          - name: board, activity, and backups
+            grep: board assignment, activity history, persistence, and backup round trip
+          - name: tag create, edit, filter, and backup
+            grep: tags can be created, edited, filtered, persisted, and restored from backup
+          - name: legacy backup and mobile tags
+            grep: legacy backups import without tags and tags remain accessible in mobile list and board views
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install Playwright Chromium and system dependencies
+        run: npx playwright install --with-deps chromium
+      - name: Run browser scenario
+        run: npm run test:e2e -- --grep "${{ matrix.grep }}"
       - name: Upload browser reports and evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: task-manager-acceptance-${{ github.run_id }}
+          name: task-manager-acceptance-${{ github.run_id }}-${{ strategy.job-index }}
           if-no-files-found: warn
           path: |
             playwright-report/
