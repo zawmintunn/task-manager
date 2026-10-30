@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createTask, filterTasks, loadTasks, saveTasks, toggleComplete, updateTask, type Task } from './tasks';
+import { createBackup, createTask, filterTasks, loadTasks, mergeTasks, parseBackup, saveTasks, toggleComplete, updateTask, type Task } from './tasks';
 const input={title:'  Plan launch ',description:' Write docs ',status:'todo' as const,priority:'medium' as const,dueDate:''};
 const fixtures:Task[]=[createTask({...input,title:'Alpha',priority:'low',dueDate:'2026-11-03'},new Date('2026-10-01T00:00:00Z'),'a'),createTask({...input,title:'Beta',description:'Launch prep',priority:'high',dueDate:'2026-11-01'},new Date('2026-10-02T00:00:00Z'),'b'),createTask({...input,title:'Gamma',status:'done',dueDate:''},new Date('2026-10-03T00:00:00Z'),'c')];
 describe('task operations',()=>{it('trims input and stamps stable identity and timestamps',()=>{const task=createTask(input,new Date('2026-01-02T03:04:05Z'),'id');expect(task.title).toBe('Plan launch');expect(task.description).toBe('Write docs');expect(task.createdAt).toBe(task.updatedAt);expect(task.id).toBe('id')});it('updates and toggles completion while advancing updatedAt',()=>{const old=fixtures[0];expect(updateTask(old,{...input,title:'New'},new Date('2026-02-01Z')).updatedAt).toBe('2026-02-01T00:00:00.000Z');expect(toggleComplete(old).status).toBe('done');expect(toggleComplete(fixtures[2]).status).toBe('todo')})});
@@ -10,4 +10,9 @@ describe('persistence',()=>{
  it('returns an empty list when storage reads fail',()=>{expect(loadTasks({getItem:()=>{throw new Error('blocked')}})).toEqual([])});
  it('reports storage write failures to its caller',()=>{const storage={setItem:()=>{throw new DOMException('quota','QuotaExceededError')}};expect(()=>saveTasks(fixtures,storage)).toThrow('quota')});
  it('handles unavailable browser storage access',()=>{const descriptor=Object.getOwnPropertyDescriptor(globalThis,'localStorage');Object.defineProperty(globalThis,'localStorage',{configurable:true,get(){throw new Error('blocked')}});try{expect(loadTasks()).toEqual([]);expect(()=>saveTasks(fixtures)).toThrow('blocked')}finally{if(descriptor)Object.defineProperty(globalThis,'localStorage',descriptor);else delete (globalThis as {localStorage?:Storage}).localStorage}})
+});
+describe('backup and restore',()=>{
+ it('round trips a versioned backup without changing task identity or timestamps',()=>{const backup=createBackup([fixtures[0]],new Date('2026-10-30T12:00:00Z'));expect(backup.version).toBe(1);expect(parseBackup(JSON.stringify(backup))).toEqual([fixtures[0]])});
+ it('rejects malformed, unsupported, and partially invalid backups',()=>{expect(()=>parseBackup('{')).toThrow(/valid JSON/);expect(()=>parseBackup(JSON.stringify({format:'task-manager-backup',version:9,tasks:[]}))).toThrow(/not supported/);expect(()=>parseBackup(JSON.stringify({format:'task-manager-backup',version:1,exportedAt:'now',tasks:[fixtures[0],{bad:true}]}))).toThrow(/invalid task data/)});
+ it('merges by stable ID and preserves unrelated existing tasks',()=>{const changed={...fixtures[0],title:'Updated from backup'};expect(mergeTasks([fixtures[0],fixtures[1]],[changed])).toEqual([changed,fixtures[1]])});
 });

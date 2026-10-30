@@ -57,6 +57,20 @@ describe('task manager journey', () => {
     render(<App />); await user.click(screen.getByRole('button',{name:/add task/i})); await user.type(screen.getByLabelText(/title/i),'Unsaved task'); await user.click(within(screen.getByRole('dialog')).getByRole('button',{name:/add task/i}));
     expect(screen.getByRole('alert')).toHaveTextContent(/check that browser storage is available/i); expect(screen.getByRole('dialog')).toBeInTheDocument(); expect(screen.getByLabelText(/title/i)).toHaveValue('Unsaved task');
   });
+  it('previews an import and merges only after explicit confirmation', async () => {
+    const user=userEvent.setup(); const current={id:'old',title:'Current task',description:'',status:'todo',priority:'low',dueDate:'',createdAt:'2026-01-01T00:00:00.000Z',updatedAt:'2026-01-01T00:00:00.000Z'};
+    const incoming={...current,id:'new',title:'Restored task'}; localStorage.setItem('task-manager.tasks.v1',JSON.stringify([current])); render(<App />);
+    const file=new File([JSON.stringify({format:'task-manager-backup',version:1,exportedAt:'2026-10-30T00:00:00.000Z',tasks:[incoming]})],'backup.json',{type:'application/json'});
+    await user.upload(screen.getByLabelText('Choose backup file'),file);
+    expect(screen.getByRole('dialog')).toHaveTextContent('1 task'); expect(screen.getByText('Current task')).toBeInTheDocument();
+    await user.click(screen.getByLabelText(/Merge with current tasks/)); await user.click(screen.getByRole('button',{name:'Apply import'}));
+    expect(screen.getByText('Current task')).toBeInTheDocument(); expect(screen.getByText('Restored task')).toBeInTheDocument(); expect(JSON.parse(localStorage.getItem('task-manager.tasks.v1')||'[]')).toHaveLength(2);
+  });
+  it('does not change stored tasks when an invalid backup is selected', async()=>{
+    const user=userEvent.setup(); const original='[{"id":"kept"}]'; localStorage.setItem('task-manager.tasks.v1',original); render(<App />);
+    await user.upload(screen.getByLabelText('Choose backup file'),new File(['{}'],'bad.json',{type:'application/json'}));
+    expect(screen.getByRole('alert')).toHaveTextContent(/not a Task Manager backup/); expect(localStorage.getItem('task-manager.tasks.v1')).toBe(original);
+  });
   it('keeps modal keyboard focus inside and closes on Escape', () => {
     render(<App />); fireEvent.click(screen.getByRole('button',{name:/add task/i}));
     const dialog=screen.getByRole('dialog'); const close=within(dialog).getByRole('button',{name:/close dialog/i}); close.focus(); fireEvent.keyDown(window,{key:'Tab',shiftKey:true});
