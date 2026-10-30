@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 
 test('task lifecycle, filters, persistence, deletion, and browser console', async ({ page }) => {
   const consoleErrors: string[] = [];
@@ -93,4 +94,60 @@ test('mobile layout and keyboard dialog controls', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Close dialog' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
+});
+
+test('board assignment, activity history, persistence, and backup round trip', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+
+  await page.getByRole('button', { name: /add task/i }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Title *').fill('Coordinate launch');
+  await dialog.getByLabel('Owner Optional').fill('Morgan Lee');
+  await dialog.getByRole('button', { name: 'Add task' }).click();
+  await expect(page.getByText('Morgan Lee')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Edit Coordinate launch', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Task activity history' })).toContainText('Task created');
+  await dialog.getByLabel('Owner Optional').fill('Riley Chen');
+  await dialog.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByText('Riley Chen')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Board', exact: true }).click();
+  await expect(page.locator('[aria-label="Tasks by status"]').getByRole('heading', { name: 'To Do' })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Move Coordinate launch to status' }).selectOption('in-progress');
+  await expect(page.locator('.board-in-progress')).toContainText('Coordinate launch');
+
+  await page.getByRole('button', { name: 'View or edit Coordinate launch' }).click();
+  await expect(page.getByRole('region', { name: 'Task activity history' })).toContainText('Owner changed from Morgan Lee to Riley Chen');
+  await expect(page.getByRole('region', { name: 'Task activity history' })).toContainText('Status changed from To Do to In Progress');
+  await page.getByRole('button', { name: 'Close dialog' }).click();
+  await page.reload();
+  await page.getByRole('button', { name: 'Board', exact: true }).click();
+  await expect(page.locator('.board-in-progress')).toContainText('Coordinate launch');
+  await expect(page.locator('.board-in-progress')).toContainText('Riley Chen');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export backup' }).click();
+  const download = await downloadPromise;
+  const exported = JSON.parse(await readFile(await download.path(), 'utf8')) as {
+    tasks: Array<{ title: string; assignee: string; status: string; activity: Array<{ type: string }> }>;
+  };
+  expect(exported.tasks).toHaveLength(1);
+  expect(exported.tasks[0]).toMatchObject({ title: 'Coordinate launch', assignee: 'Riley Chen', status: 'in-progress' });
+  expect(exported.tasks[0].activity.map(event => event.type)).toEqual(expect.arrayContaining(['created', 'assignment_changed', 'status_changed']));
+
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.getByRole('button', { name: 'Import backup' }).click();
+  await page.getByLabel('Choose backup file').setInputFiles(await download.path());
+  await expect(page.getByRole('dialog', { name: 'Import backup' })).toContainText('The file contains 1 task');
+  await page.getByRole('button', { name: 'Apply import' }).click();
+  await page.getByRole('button', { name: 'Board', exact: true }).click();
+  await expect(page.locator('.board-in-progress')).toContainText('Coordinate launch');
+  await expect(page.locator('.board-in-progress')).toContainText('Riley Chen');
+  await page.getByRole('button', { name: 'View or edit Coordinate launch' }).click();
+  await expect(page.getByRole('region', { name: 'Task activity history' })).toContainText('Owner changed from Morgan Lee to Riley Chen');
+  await expect(page.getByRole('region', { name: 'Task activity history' })).toContainText('Status changed from To Do to In Progress');
 });
