@@ -6,6 +6,18 @@ import App from './App';
 afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); });
 
 describe('task manager journey', () => {
+  it('keeps the first-run empty view until a search or filter is active', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    expect(screen.getByText('A clear desk. A fresh start.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create your first task' })).toBeInTheDocument();
+
+    await user.type(screen.getByRole('textbox', { name: 'Search tasks' }), 'missing');
+    expect(screen.getByText('No tasks found')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Clear search and filters' })).toBeInTheDocument();
+    expect(screen.queryByText('A clear desk. A fresh start.')).not.toBeInTheDocument();
+  });
+
   it('creates, edits, searches, completes, reloads, and deletes a task', async () => {
     const user = userEvent.setup();
     const view = render(<App />);
@@ -30,7 +42,7 @@ describe('task manager journey', () => {
   it('shows an actionable message when saving fails', async () => {
     const user=userEvent.setup(); vi.spyOn(Storage.prototype,'setItem').mockImplementation(()=>{throw new DOMException('quota','QuotaExceededError')});
     render(<App />); await user.click(screen.getByRole('button',{name:/add task/i})); await user.type(screen.getByLabelText(/title/i),'Unsaved task'); await user.click(within(screen.getByRole('dialog')).getByRole('button',{name:/add task/i}));
-    expect(screen.getByRole('alert')).toHaveTextContent(/check that browser storage is available/i);
+    expect(screen.getByRole('alert')).toHaveTextContent(/check that browser storage is available/i); expect(screen.getByRole('dialog')).toBeInTheDocument(); expect(screen.getByLabelText(/title/i)).toHaveValue('Unsaved task');
   });
   it('keeps modal keyboard focus inside and closes on Escape', () => {
     render(<App />); fireEvent.click(screen.getByRole('button',{name:/add task/i}));
