@@ -6,6 +6,19 @@ import App from './App';
 afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); });
 
 describe('task manager journey', () => {
+  it('follows system preference until a theme is chosen, then persists the choice', async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal('matchMedia', vi.fn().mockReturnValue({ matches: true }));
+    const view = render(<App />);
+    expect(view.container.querySelector('.app-shell')).toHaveAttribute('data-theme', 'dark');
+    await user.click(screen.getByRole('button', { name: 'Switch to light theme' }));
+    expect(view.container.querySelector('.app-shell')).toHaveAttribute('data-theme', 'light');
+    expect(localStorage.getItem('task-manager-theme')).toBe('light');
+    view.unmount();
+    render(<App />);
+    expect(document.querySelector('.app-shell')).toHaveAttribute('data-theme', 'light');
+    vi.unstubAllGlobals();
+  });
   it('keeps the first-run empty view until a search or filter is active', async () => {
     const user = userEvent.setup();
     render(<App />);
