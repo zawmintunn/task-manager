@@ -4,7 +4,7 @@ A lightweight personal task manager for capturing work, setting priorities, and 
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 20.19 or newer (or 22.12 or newer)
 - npm
 
 ## Install and run
