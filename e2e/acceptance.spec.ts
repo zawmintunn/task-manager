@@ -20,18 +20,19 @@ test('task lifecycle, filters, persistence, deletion, and browser console', asyn
   await page.getByRole('button', { name: 'Add task' }).last().click();
   await expect(page.getByText('Enter a title to save this task.')).toBeVisible();
 
-  await page.getByLabel('Title *').fill('Prepare roadmap');
-  await page.getByLabel('Description Optional').fill('Draft milestones');
-  await page.getByLabel('Priority').selectOption('high');
-  await page.getByLabel('Due date Optional').fill('2099-01-01');
-  await page.getByRole('button', { name: 'Add task' }).last().click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Title *').fill('Prepare roadmap');
+  await dialog.getByLabel('Description Optional').fill('Draft milestones');
+  await dialog.getByLabel('Priority').selectOption('high');
+  await dialog.getByLabel('Due date Optional').fill('2099-01-01');
+  await dialog.getByRole('button', { name: 'Add task' }).click();
   await expect(page.getByText('Prepare roadmap')).toBeVisible();
 
   await page.getByRole('button', { name: /add task/i }).click();
-  await page.getByLabel('Title *').fill('Product closeout');
-  await page.getByLabel('Priority').selectOption('low');
-  await page.getByLabel('Due date Optional').fill('2098-01-01');
-  await page.getByRole('button', { name: 'Add task' }).last().click();
+  await page.getByRole('dialog').getByLabel('Title *').fill('Product closeout');
+  await page.getByRole('dialog').getByLabel('Priority').selectOption('low');
+  await page.getByRole('dialog').getByLabel('Due date Optional').fill('2098-01-01');
+  await page.getByRole('dialog').getByRole('button', { name: 'Add task' }).click();
   const stat = (label: string) => page.locator('.stat-card').filter({ hasText: label }).locator('strong');
   await expect(stat('Total tasks')).toHaveText('2');
   await expect(stat('Pending')).toHaveText('2');
