@@ -2,6 +2,7 @@ export type Status = 'todo' | 'in-progress' | 'done';
 export type Priority = 'low' | 'medium' | 'high';
 export type Task = { id: string; title: string; description: string; status: Status; priority: Priority; dueDate: string; createdAt: string; updatedAt: string };
 export type TaskInput = Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'dueDate'>;
+export type TaskBackup = { format: 'task-manager-backup'; version: 1; exportedAt: string; tasks: Task[] };
 export type Filters = { query: string; status: Status | 'all'; priority: Priority | 'all'; sort: 'newest' | 'dueDate' | 'priority' };
 export const STORAGE_KEY = 'task-manager.tasks.v1';
 const statuses: Status[] = ['todo', 'in-progress', 'done'];
@@ -17,6 +18,29 @@ export function loadTasks(storage?: Pick<Storage, 'getItem'>): Task[] {
   try { const raw = (storage ?? globalThis.localStorage).getItem(STORAGE_KEY); if (!raw) return []; const parsed: unknown = JSON.parse(raw); return Array.isArray(parsed) ? parsed.filter(isTask) : []; } catch { return []; }
 }
 export function saveTasks(tasks: Task[], storage?: Pick<Storage, 'setItem'>): void { (storage ?? globalThis.localStorage).setItem(STORAGE_KEY, JSON.stringify(tasks)); }
+export function createBackup(tasks: Task[], exportedAt = new Date()): TaskBackup {
+  return { format: 'task-manager-backup', version: 1, exportedAt: exportedAt.toISOString(), tasks };
+}
+export function parseBackup(contents: string): Task[] {
+  let parsed: unknown;
+  try { parsed = JSON.parse(contents); } catch { throw new Error('This file is not valid JSON.'); }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('This is not a Task Manager backup.');
+  const backup = parsed as Record<string, unknown>;
+  if (backup.format !== 'task-manager-backup') throw new Error('This is not a Task Manager backup.');
+  if (backup.version !== 1) throw new Error('This backup version is not supported.');
+  if (typeof backup.exportedAt !== 'string' || !Array.isArray(backup.tasks) || !backup.tasks.every(isTask)) throw new Error('The backup contains invalid task data. No tasks were imported.');
+  const ids = new Set<string>();
+  for (const task of backup.tasks) {
+    if (ids.has(task.id)) throw new Error('The backup contains duplicate task IDs. No tasks were imported.');
+    ids.add(task.id);
+  }
+  return backup.tasks;
+}
+export function mergeTasks(existing: Task[], imported: Task[]): Task[] {
+  const byId = new Map(existing.map(task => [task.id, task]));
+  for (const task of imported) byId.set(task.id, task);
+  return [...byId.values()];
+}
 export function createTask(input: TaskInput, now = new Date(), id: string = crypto.randomUUID()): Task {
   const timestamp = now.toISOString(); return { ...input, title: input.title.trim(), description: input.description.trim(), id, createdAt: timestamp, updatedAt: timestamp };
 }
