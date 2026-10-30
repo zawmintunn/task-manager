@@ -71,6 +71,43 @@ describe('task manager journey', () => {
     await user.upload(screen.getByLabelText('Choose backup file'),new File(['{}'],'bad.json',{type:'application/json'}));
     expect(screen.getByRole('alert')).toHaveTextContent(/not a Task Manager backup/); expect(localStorage.getItem('task-manager.tasks.v1')).toBe(original);
   });
+  it('creates, edits, displays, filters, and reloads tags', async()=>{
+    const user=userEvent.setup(); const view=render(<App />);
+    await user.click(screen.getByRole('button',{name:/add task/i}));
+    const createDialog=screen.getByRole('dialog');
+    await user.type(within(createDialog).getByLabelText(/title/i),'Plan release');
+    await user.type(within(createDialog).getByLabelText(/tags/i),' Work, Planning, work, ');
+    await user.click(within(createDialog).getByRole('button',{name:'Add task'}));
+    expect(screen.getByLabelText('Tags')).toHaveTextContent('work');
+    expect(screen.getByLabelText('Tags')).toHaveTextContent('planning');
+
+    await user.click(screen.getByRole('button',{name:'Edit Plan release'}));
+    const editDialog=screen.getByRole('dialog');
+    const tagInput=within(editDialog).getByLabelText(/tags/i);
+    await user.clear(tagInput); await user.type(tagInput,'Review, Follow-up, REVIEW');
+    await user.click(within(editDialog).getByRole('button',{name:'Save changes'}));
+    expect(screen.getByLabelText('Tags')).toHaveTextContent('review');
+    expect(screen.getByLabelText('Tags')).toHaveTextContent('follow-up');
+    expect(screen.getByLabelText('Tags').querySelectorAll('.tag-chip')).toHaveLength(2);
+
+    const filter=screen.getByRole('textbox',{name:'Filter by tag'});
+    await user.type(filter,'review, follow-up');
+    expect(screen.getByText('Plan release')).toBeInTheDocument();
+    await user.clear(filter); await user.type(filter,'missing');
+    expect(screen.getByText('No tasks found')).toBeInTheDocument();
+    view.unmount(); render(<App />);
+    expect(screen.getByLabelText('Tags')).toHaveTextContent('follow-up');
+  });
+  it('imports a legacy backup task without tags and normalizes it for storage', async()=>{
+    const user=userEvent.setup(); render(<App />);
+    const legacy={id:'legacy',title:'Old task',description:'',status:'todo',priority:'medium',dueDate:'',createdAt:'2026-10-01T00:00:00.000Z',updatedAt:'2026-10-01T00:00:00.000Z'};
+    const backup={format:'task-manager-backup',version:1,exportedAt:'2026-10-01T00:00:00.000Z',tasks:[legacy]};
+    await user.upload(screen.getByLabelText('Choose backup file'),new File([JSON.stringify(backup)],'legacy.json',{type:'application/json'}));
+    expect(screen.getByRole('dialog')).toHaveTextContent('1 task');
+    await user.click(screen.getByRole('button',{name:'Apply import'}));
+    expect(screen.getByText('Old task')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('task-manager.tasks.v1')||'[]')[0].tags).toEqual([]);
+  });
   it('keeps modal keyboard focus inside and closes on Escape', () => {
     render(<App />); fireEvent.click(screen.getByRole('button',{name:/add task/i}));
     const dialog=screen.getByRole('dialog'); const close=within(dialog).getByRole('button',{name:/close dialog/i}); close.focus(); fireEvent.keyDown(window,{key:'Tab',shiftKey:true});
