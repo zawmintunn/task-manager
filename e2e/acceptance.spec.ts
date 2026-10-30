@@ -37,7 +37,7 @@ test('task lifecycle, filters, persistence, deletion, and browser console', asyn
   await expect(stat('Total tasks')).toHaveText('2');
   await expect(stat('Pending')).toHaveText('2');
 
-  await page.getByRole('button', { name: 'Edit Prepare roadmap' }).click();
+  await page.getByRole('button', { name: 'Edit Prepare roadmap', exact: true }).click();
   await page.getByLabel('Title *').fill('Prepare product roadmap');
   await page.getByLabel('Status').selectOption('in-progress');
   await page.getByRole('button', { name: 'Save changes' }).click();
