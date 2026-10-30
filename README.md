@@ -34,6 +34,17 @@ For real-browser acceptance checks, install Playwright's Chromium once with
 start the Vite app automatically and save an empty-state screenshot to
 `artifacts/qa-task-manager-empty.png`.
 
+## Publish with GitHub Pages
+
+The `Deploy Task Manager to GitHub Pages` workflow publishes the production app
+when changes are pushed to `main` and can also be started from the repository's
+**Actions** tab. In **Settings → Pages**, set the build and deployment source to
+**GitHub Actions**. After the workflow succeeds, open
+<https://zawmintunn.github.io/task-manager/>.
+
+Tasks are saved in each visitor's browser on that device and are not shared
+between visitors or synced across devices.
+
 ## MVP limitations
 
 Tasks remain in this browser's local storage and are not synced across devices or browsers. Clearing site data removes them. This MVP has no authentication, collaboration, reminders, recurring tasks, or server backup. If browser storage is blocked or full, the app shows a save error and and keeps your saved data unchanged.
