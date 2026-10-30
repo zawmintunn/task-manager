@@ -87,7 +87,7 @@ test('mobile layout and keyboard dialog controls', async ({ page }) => {
   await page.keyboard.press('Shift+Tab');
   await expect(page.getByRole('button', { name: 'Close dialog' })).toBeFocused();
   await page.keyboard.press('Shift+Tab');
-  await expect(page.getByRole('button', { name: 'Add task' })).toBeFocused();
+  await expect(page.getByRole('dialog').getByRole('button', { name: 'Add task' })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('button', { name: 'Close dialog' })).toBeFocused();
   await page.keyboard.press('Escape');
